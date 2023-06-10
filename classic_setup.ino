@@ -45,7 +45,8 @@ void connect_wifi(){
  delay(100); // ms
 
  Serial.println(String("\nAttempting to connect to SSIDs : "));
- // wifiMulti.addAP("iPhone-Arman", "ilovesql");
+ //wifiMulti.addAP("iPhone-Arman", "ilovesql");
+// wifiMulti.addAP("AndroidAPFE44", "12091999");
  wifiMulti.addAP("S21ultra", "s21ultra");
  wifiMulti.addAP("HUAWEI-553A", "QTM06RTT");
  //wifiMulti.addAP("GMAP", "vijx47050");

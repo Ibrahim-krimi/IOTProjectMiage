@@ -1,6 +1,7 @@
 #include "ESPAsyncWebServer.h"
 #include "routes.h"
 #include <HTTPClient.h>
+#include <esp_task_wdt.h>
 
 String proccesus(const String& var){
 
@@ -15,6 +16,7 @@ String httpPOSTRequest(String httpRequestData) {
      This method sends data via HTTP POST requests to host/url
      and return the response/payload of the request to UrlServer
   */
+  
       String UrlServer="https://iotwebservice-kspm.onrender.com/insert";
        String payload = "{}";
         HTTPClient http; // http protocol entity =>  client
@@ -28,7 +30,7 @@ String httpPOSTRequest(String httpRequestData) {
           http.addHeader("Content-Type", "application/json");
         // POST
         int httpResponseCode = http.POST(httpRequestData);
-      
+
         // Get the response => will fill payload String
         if (httpResponseCode > 0) {
           USE_SERIAL.printf("HTTP Response code : %d", httpResponseCode);

@@ -30,6 +30,8 @@ const char* mqtt_server2 = "mqtt.eclipseprojects.io"; // anynomous Ok in 2021
 /*============= GPIO ==============*/
 const int greenLed = 19; // LED Pin
 const int redLed = 21; // LED Pin
+const int blue_led= 2;
+
  DHT dht(DHTPIN, DHTTYPE);
 const int LightPin = A5; // Read analog input on ADC1_CHANNEL_5 (GPIO 33)
 
@@ -51,6 +53,7 @@ struct PersonneData { //defintion des pcines recup dans la
 
 PersonneData personne[31];
 int personneCount = 0;
+int cpt = 0;
 /*============= Picine ==============*/
 struct PoolData { //defintion des pcines recup dans la
   String ident;
@@ -155,6 +158,7 @@ double Distance100metre(PoolData* pool, PersonneData personne) {
 
 /*===== Arduino IDE paradigm : setup+loop =====*/
 void setup() {
+  
   int poolCount = 0; // Initialisation à 0
   int personneCount = 0;
   dht.begin();
@@ -167,8 +171,11 @@ void setup() {
   // Initialize the output variables as outputs
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
+    pinMode(blue_led, OUTPUT);
   digitalWrite(redLed, LOW);// Set outputs to LOW
   digitalWrite(greenLed, LOW);// Set outputs to LOW
+  digitalWrite(blue_led, LOW);// Set outputs to LOW
+
   setup_http_Get(&server); // Appel de la fonction pour configurer les routes GET
   server.begin(); // Démarrez le serveur
 
@@ -236,24 +243,34 @@ void mqtt_pubcallback(char* topic,
 
       // Check the identifier
       String ident = doc["info"]["ident"];
+   /*
       if (ident == "P_22204970") {
         Serial.println("Ignoring my own pool data");
         return;
       }
-    
+    */
       // Retrieve the coordinates and temperature
       float lat = doc["info"]["loc"]["lat"];
       float lon = doc["info"]["loc"]["lon"];
       float temp = doc["status"]["temperature"];
     
       // Store the data
-       if (haversine(latitude, longitude, lat,lon)<=25.0) {
-        
-        if (poolCount < 30) { // make sure not to overflow the array
-        PoolData pd = {ident, lat, lon, temp};
-        pools[poolCount] = pd;
-        poolCount++;
-        }
+       if (haversine(latitude, longitude, lat,lon)<=50.0) {
+              // Check if the pool already exists in the array
+              bool poolExists = false;
+              for (int i = 0; i < poolCount; i++) {
+                if (pools[i].ident == ident) {
+                  poolExists = true;
+                  break;
+                }
+              }
+          
+              // If the pool doesn't exist in the array, add it
+              if (!poolExists && poolCount < 30) { // make sure not to overflow the array
+                PoolData pd = {ident, lat, lon, temp};
+                pools[poolCount] = pd;
+                poolCount++;
+              }
       
        }
   }
@@ -433,10 +450,23 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
          // Vérification si la demande existe déjà
           bool demandeExiste = false;
           for (int i = 0; i < demandesCount; i++) {
-            if (demandes[i].id_user == personneTrouvee->ident && demandes[i].id_piscine == poolTrouvee->ident) {
+            if (demandes[i].id_user == personneTrouvee->ident && demandes[i].id_piscine == poolTrouvee->ident && demandes[i].Date_d_sortie == "00/00/0000" ) {
               // La demande existe déjà, remplissez la date de sortie avec la date actuelle
               demandes[i].Date_d_sortie = Date;
               demandeExiste = true;
+               digitalWrite(blue_led, HIGH);// Set outputs to LOW
+              //delay(30000)-delayinterdit enasynchrone
+              //digitalWrite(blue_led, LOW);// Set outputs to LOW
+                char jsonStringPost[1000];
+                StaticJsonDocument<1000> JsonDemandes=create_jsonDemandes(    demandes[i].id_user,   demandes[i].id_piscine,   demandes[i].Nom_user,   demandes[i].Date_d_entree, demandes[i].Date_d_sortie ,demandes[i].distance, demandes[i].lan_piscine, demandes[i].lat_piscine, demandes[i].temp_piscine);
+              
+               serializeJson(JsonDemandes, jsonStringPost);
+                String message = jsonStringPost;
+                // Serial info
+                Serial.print("Demande To Json:"); 
+                Serial.println( message.c_str());
+               // Send the JSON string to your server
+              String response = httpPOSTRequest(jsonStringPost);
               break;
             }
           }
@@ -455,8 +485,7 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
               demandesCount++; 
               Serial.println("Demande Stocker dans le tableau");
               char jsonStringPost[1000];
-
-              StaticJsonDocument<1000> JsonDemandes=create_jsonDemandes(   personneTrouvee->ident,   poolTrouvee->ident,   personneTrouvee->tid,   demandes[demandesCount].Date_d_entree,   distance, poolTrouvee->lon,poolTrouvee->lat, poolTrouvee->temp);
+              StaticJsonDocument<1000> JsonDemandes=create_jsonDemandes(   personneTrouvee->ident,   poolTrouvee->ident,   personneTrouvee->tid,   demandes[demandesCount-1].Date_d_entree, demandes[demandesCount-1].Date_d_sortie ,distance, poolTrouvee->lon,poolTrouvee->lat, poolTrouvee->temp);
                 serializeJson(JsonDemandes, jsonStringPost);
                 String message = jsonStringPost;
                 // Serial info
@@ -465,10 +494,14 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
                // Send the JSON string to your server
               String response = httpPOSTRequest(jsonStringPost);
               // Print the server's response
+              Serial.println("la reponse de Post : ");
               Serial.println(response);
+              Serial.println("fin de reponse");
+              digitalWrite(blue_led, HIGH);// Set outputs to LOW
+              //delay(30000); 
             }
             else{
-             Serial.println("Demande existe dans le tableau");
+             Serial.println("Demande existe dans le tableau Date de Sortie faite");
               }
             
             } else {
@@ -484,7 +517,6 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
       // Un ou les deux paramètres manquent, affichez un message d'erreur
       Serial.println("Erreur : Paramètres manquants");
     }
-
   request->send(200); // Réponse OK à la requête GET
   });
 }
@@ -533,9 +565,34 @@ void afficherPersonnes() {
     Serial.println(personne[i].lon);
   }
 }
+void afficherPools() {
+  Serial.println("Liste des piscines :");
+  for (int i = 0; i < poolCount; i++) {
+    Serial.println("------------------------");
+    Serial.print("Piscine ");
+    Serial.print(i + 1);
+    Serial.print(": Ident = ");
+    Serial.print(pools[i].ident);
+    Serial.print(", Latitude = ");
+    Serial.print(pools[i].lat);
+    Serial.print(", Longitude = ");
+    Serial.print(pools[i].lon);
+    Serial.print(", Temperature = ");
+    Serial.println(pools[i].temp);
+  }
+}
 /*================= LOOP ======================*/
 void loop() {
-  int32_t period = 10000; // 5 sec
+  int32_t period = 5000; // 5 sec
+
+  if (digitalRead(blue_led)) {
+    cpt = cpt + 1;
+
+    if ( cpt >= 6 ) {
+        digitalWrite(blue_led, LOW);// Set outputs to LOW
+        cpt = 0;
+     }
+  }
    if (!client2.connected()) { 
     mqtt_mysubscribeclient2((char *)(TOPIC_DEMANDE));
   }
@@ -556,7 +613,6 @@ String sta ="Green" ;
   }
 
   if( temperature >=maximum) {
-      Serial.println("je suis la :"); 
       red = true;
       sta ="Red";
       greenLedon(LOW);
@@ -576,6 +632,7 @@ String presence = "non" ;
  StaticJsonDocument<1000> piscine_data = init_json("Piscine Ibrahim","ALLO BASSEM ,OUAIS C'EST Greg",temperature, latitude, longitude,sta,presence,last_ip);
   char jsonString[1000];
   afficherPersonnes();
+  afficherPools();
   afficherDemandes();
   serializeJson(piscine_data, jsonString);
   String message = jsonString;

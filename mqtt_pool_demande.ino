@@ -73,7 +73,7 @@ StaticJsonDocument<1000> init_json(const char* name, const char* descr,float tem
 }
 
 
-StaticJsonDocument<1000> create_jsonDemandes(String id_user, String id_piscine, String Nom_user,  String Date_d_entree, float distance,  float lan_piscine, float lat_piscine, float temp_piscine
+StaticJsonDocument<1000> create_jsonDemandes(String id_user, String id_piscine, String Nom_user,  String Date_d_entree,  String Date_d_sortie, float distance,  float lan_piscine, float lat_piscine, float temp_piscine
 ) {
   StaticJsonDocument<1000> doc;
 
@@ -81,6 +81,7 @@ StaticJsonDocument<1000> create_jsonDemandes(String id_user, String id_piscine, 
   doc["id_piscine"] = id_piscine;
   doc["Nom_user"] = Nom_user;
   doc["Date_d_entree"] = Date_d_entree;
+  doc["Date_d_sortie"] = Date_d_sortie;
   doc["distance"] = distance;
   doc["lan_piscine"] = lan_piscine;
   doc["lat_piscine"] = lat_piscine;
