@@ -89,3 +89,15 @@ StaticJsonDocument<1000> create_jsonDemandes(String id_user, String id_piscine, 
 
   return doc;
 }
+
+StaticJsonDocument<1000> create_jsonPostion(String id, String tid, float lat, float lon, String couleur) {
+  StaticJsonDocument<1000> doc;
+
+  doc["id"] = id;
+  doc["tid"] = tid;
+  doc["lat"] = lat;
+  doc["lon"] = lon;
+  doc["couleur"] = couleur;
+
+  return doc;
+}

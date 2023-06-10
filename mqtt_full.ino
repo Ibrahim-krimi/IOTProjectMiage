@@ -23,6 +23,8 @@ const char* mqtt_server2 = "mqtt.eclipseprojects.io"; // anynomous Ok in 2021
 #define USE_SERIAL Serial
 
 #define TOPIC_DEMANDE  "uca/waterbnb/#"
+#define TOPIC_Postion  "uca/waterbnb/000000/test"
+
 
 #define DHTPIN 4     // specify the pin connected to DHT11
 #define DHTTYPE DHT11 // specify the type of DHT sensor
@@ -78,7 +80,14 @@ struct Demandes {
 };
 
 Demandes demandes[31];
-int demandesCount = 0;
+int demandesCount = 0; 
+
+/*Declaration des Postions*/
+
+const int MAX_POSITIONS = 20;  // Maximun number of positions you want to store
+int positionsCount = 0;  // The current number of positions
+StaticJsonDocument<1000> positions[MAX_POSITIONS]; 
+
 
 /* ---- TEMP ---- */  
 
@@ -369,7 +378,7 @@ void mqtt_pubcallbackclient2(char* topic,
     }
   }
 
-  if (!identExists) {
+  if (!identExists && ident!="000000" ) {
     // Store the data
     if (personneCount < 30) { // make sure not to overflow the array
       PersonneData ps = { ident, tid, lat, lon };
@@ -459,7 +468,7 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
               //digitalWrite(blue_led, LOW);// Set outputs to LOW
                 char jsonStringPost[1000];
                 StaticJsonDocument<1000> JsonDemandes=create_jsonDemandes(    demandes[i].id_user,   demandes[i].id_piscine,   demandes[i].Nom_user,   demandes[i].Date_d_entree, demandes[i].Date_d_sortie ,demandes[i].distance, demandes[i].lan_piscine, demandes[i].lat_piscine, demandes[i].temp_piscine);
-              
+ 
                serializeJson(JsonDemandes, jsonStringPost);
                 String message = jsonStringPost;
                 // Serial info
@@ -467,6 +476,10 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
                 Serial.println( message.c_str());
                // Send the JSON string to your server
               String response = httpPOSTRequest(jsonStringPost);
+              demandes[i] = demandes[demandesCount - 1]; // Remplacer l'élément à supprimer par le dernier élément
+
+              
+              demandesCount--; // Réduire la taille du tableau de 1
               break;
             }
           }
@@ -498,6 +511,17 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
               Serial.println(response);
               Serial.println("fin de reponse");
               digitalWrite(blue_led, HIGH);// Set outputs to LOW
+                          // Ajout d'une position au tableau
+            if (positionsCount < MAX_POSITIONS) {
+              positions[positionsCount] = create_jsonPostion(personneTrouvee->ident, personneTrouvee->tid, personneTrouvee->lat, personneTrouvee->lon, "Yellow");
+              positionsCount++;
+            } else {
+              Serial.println("Erreur: Le tableau de positions est plein !");
+            }
+            
+
+            /*--- Publish information postion Demandes */
+ 
               //delay(30000); 
             }
             else{
@@ -583,12 +607,12 @@ void afficherPools() {
 }
 /*================= LOOP ======================*/
 void loop() {
-  int32_t period = 5000; // 5 sec
+  int32_t period = 10000; // 5 sec
 
   if (digitalRead(blue_led)) {
     cpt = cpt + 1;
 
-    if ( cpt >= 6 ) {
+    if ( cpt >= 3 ) {
         digitalWrite(blue_led, LOW);// Set outputs to LOW
         cpt = 0;
      }
@@ -641,6 +665,37 @@ String presence = "non" ;
   Serial.println( message.c_str());
   // MQTT Publish
   client.publish(TOPIC, message.c_str());
+ 
+for (int i = 0; i < positionsCount; i++) {
+    char jsonStringPostion[1000];
+    serializeJson(positions[i], jsonStringPostion);
+    String MessagePostion = jsonStringPostion;
+    Serial.print("Postion envoyer  :"); 
+    Serial.println(MessagePostion.c_str());
+    // MQTT Publish
+    client2.publish(TOPIC_Postion, MessagePostion.c_str());
+  
+    // Remplacer l'élément actuel par le dernier élément
+    positions[i] = positions[positionsCount - 1];
+    // Réduire la taille du tableau de 1
+    positionsCount--;
+}
+
+  /*--- Publish information postion Demandes */
+  /*
+   * 
+  StaticJsonDocument<1000> Postion= create_jsonPostion("00","IB", 43.621887,7.046368,"Yellow");
+              char jsonStringPostion[1000];
+              serializeJson(Postion, jsonStringPostion);
+              String MessagePostion = jsonStringPostion;
+              // Serial info
+              Serial.print("Postion envoyer  :"); 
+              Serial.println( MessagePostion.c_str());
+              // MQTT Publish
+              client2.publish(TOPIC_Postion, MessagePostion.c_str());
+
+
+ */
   client.loop();
   client2.loop();
   delay(period);  
