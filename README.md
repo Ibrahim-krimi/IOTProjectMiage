@@ -20,9 +20,19 @@ En parallèle, l'emplacement de l'utilisateur est mis en évidence en jaune sur 
 Pour obtenir les données : https://iotwebservice-kspm.onrender.com/get
 Pour insérer des données : https://iotwebservice-kspm.onrender.com/insert
 
+
 # Dashboard d'administration
 
 Dans le cadre de ce projet, nous avons également mis en place un tableau de bord d'administration. Ce tableau de bord permet de garder une trace de toutes les entrées et sorties de la piscine.
+
+# Lien vers le git de Dashboard
+
+https://github.com/Ibrahim-krimi/iotProjet_dashboardAdmin
+
+# Lien vers le git de WebService
+
+https://github.com/Ibrahim-krimi/IOT
+
 
 # Lancement du projet
 
