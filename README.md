@@ -14,6 +14,8 @@ De plus, notre système intègre également des données de localisation de pers
 
 Lorsqu'un utilisateur souhaite entrer dans une piscine, une demande est envoyée via une requête GET. Cette demande est ensuite transmise à aa notre ESP et apres notre service web via une requête POST. Le service web traite la demande et l'enregistre dans notre base de données MongoDB. En outre, l'application vérifie si la distance entre la piscine et l'utilisateur est inférieure à 100 mètres, ce qui est un prérequis pour que l'utilisateur puisse accéder à la piscine.
 
+Suite au traitement de la demande,la LED de l'ESP32 s'allume pendant 30 secondes. Notez qu'à la première demande, il peut être nécessaire de réessayer en raison d'un problème de watchdog que nous n'avons pas réussi à résoudre. Cependant, ce problème ne se présente pas pour les demandes suivantes.
+
 En parallèle, l'emplacement de l'utilisateur est mis en évidence en jaune sur notre carte Node-RED.
 
 # Lien vers le service Web
@@ -33,6 +35,9 @@ https://github.com/Ibrahim-krimi/iotProjet_dashboardAdmin
 
 https://github.com/Ibrahim-krimi/IOT
 
+# Lien vers le git de la partie Arduino
+
+https://github.com/Ibrahim-krimi/IOTProjectMiage
 
 # Lancement du projet
 
