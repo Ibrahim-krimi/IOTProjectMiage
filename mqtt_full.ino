@@ -455,7 +455,7 @@ server->on("/open", HTTP_GET, [](AsyncWebServerRequest *request){
          double distance = Distance100metre(poolTrouvee, *personneTrouvee);
          Serial.println("La distance est egale");
          Serial.println(distance);
-         if (distance <= 100.0) {
+         if (distance <= 0.1) {
          // Vérification si la demande existe déjà
           bool demandeExiste = false;
           for (int i = 0; i < demandesCount; i++) {
